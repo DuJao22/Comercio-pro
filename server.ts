@@ -41,14 +41,19 @@ const authenticateToken = (req: any, res: Response, next: NextFunction) => {
 app.post('/api/login', async (req, res) => {
   const { email, password } = req.body;
   try {
-    const user = await db.prepare('SELECT * FROM users WHERE email = ?').get(email) as any;
+    const user = await db.prepare(`
+      SELECT u.*, s.name as store_name 
+      FROM users u 
+      LEFT JOIN stores s ON u.store_id = s.id 
+      WHERE u.email = ?
+    `).get(email) as any;
 
     if (!user || !bcrypt.compareSync(password, user.password)) {
       return res.status(401).json({ message: 'Credenciais inválidas' });
     }
 
     const token = jwt.sign({ id: user.id, role: user.role, store_id: user.store_id, name: user.name }, SECRET_KEY, { expiresIn: '8h' });
-    res.json({ token, user: { id: user.id, name: user.name, email: user.email, role: user.role, store_id: user.store_id } });
+    res.json({ token, user: { id: user.id, name: user.name, email: user.email, role: user.role, store_id: user.store_id, store_name: user.store_name } });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Erro no login' });

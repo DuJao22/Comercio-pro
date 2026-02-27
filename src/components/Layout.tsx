@@ -78,7 +78,9 @@ export default function Layout({ children, activePage, onNavigate }: LayoutProps
             </div>
             <div className="flex-1 overflow-hidden">
               <p className="text-sm font-medium truncate">{user?.name}</p>
-              <p className="text-xs text-slate-400 capitalize">{user?.role}</p>
+              <p className="text-xs text-slate-400 capitalize">
+                {user?.role === 'superadmin' ? 'Super Admin' : user?.store_name || 'Admin'}
+              </p>
             </div>
           </div>
           <button

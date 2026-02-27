@@ -334,6 +334,24 @@ app.post('/api/users', authenticateToken, async (req: any, res) => {
   }
 });
 
+app.put('/api/users/:id/reset-password', authenticateToken, async (req: any, res) => {
+  if (req.user.role !== 'superadmin') return res.status(403).json({ error: 'Acesso negado' });
+  const { id } = req.params;
+  const { password } = req.body;
+
+  if (!password || password.length < 6) {
+    return res.status(400).json({ error: 'Senha deve ter pelo menos 6 caracteres' });
+  }
+
+  try {
+    const hashedPassword = bcrypt.hashSync(password, 10);
+    await db.prepare('UPDATE users SET password = ? WHERE id = ?').run(hashedPassword, id);
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao redefinir senha' });
+  }
+});
+
 app.delete('/api/users/:id', authenticateToken, async (req: any, res) => {
   if (req.user.role !== 'superadmin') return res.status(403).json({ error: 'Acesso negado' });
   const { id } = req.params;
@@ -347,6 +365,39 @@ app.delete('/api/users/:id', authenticateToken, async (req: any, res) => {
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: 'Erro ao excluir usuário' });
+  }
+});
+
+// Profile Management (Self)
+app.put('/api/profile', authenticateToken, async (req: any, res) => {
+  const { name, email, password, currentPassword } = req.body;
+  const userId = req.user.id;
+
+  try {
+    const user = await db.prepare('SELECT * FROM users WHERE id = ?').get(userId) as any;
+    
+    if (!user) return res.status(404).json({ error: 'Usuário não encontrado' });
+
+    // Validate current password if changing password
+    if (password) {
+      if (!currentPassword || !bcrypt.compareSync(currentPassword, user.password)) {
+        return res.status(400).json({ error: 'Senha atual incorreta' });
+      }
+      const hashedPassword = bcrypt.hashSync(password, 10);
+      await db.prepare('UPDATE users SET password = ? WHERE id = ?').run(hashedPassword, userId);
+    }
+
+    // Update info
+    if (name || email) {
+      await db.prepare('UPDATE users SET name = ?, email = ? WHERE id = ?').run(name || user.name, email || user.email, userId);
+    }
+
+    res.json({ success: true });
+  } catch (error: any) {
+    if (error.toString().includes('UNIQUE')) {
+      return res.status(400).json({ error: 'Email já cadastrado' });
+    }
+    res.status(500).json({ error: 'Erro ao atualizar perfil' });
   }
 });
 

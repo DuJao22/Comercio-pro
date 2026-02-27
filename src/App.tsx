@@ -12,6 +12,8 @@ import Requests from './pages/Requests';
 
 import Users from './pages/Users';
 
+import Profile from './pages/Profile';
+
 function AppContent() {
   const { isAuthenticated } = useAuth();
   const [currentPage, setCurrentPage] = useState('dashboard');
@@ -29,6 +31,7 @@ function AppContent() {
       case 'shipments': return <Shipments />;
       case 'stores': return <Stores />;
       case 'users': return <Users />;
+      case 'profile': return <Profile />;
       default: return <Dashboard />;
     }
   };

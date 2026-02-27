@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Users as UsersIcon, UserPlus, Trash, Store } from 'lucide-react';
+import { Users as UsersIcon, UserPlus, Trash, Store, Key } from 'lucide-react';
 
 interface User {
   id: number;
@@ -97,6 +97,36 @@ export default function Users() {
       }
     } catch (error) {
       console.error(error);
+    }
+  };
+
+  const handleResetPassword = async (id: number) => {
+    const newPass = prompt('Digite a nova senha para este usuário:');
+    if (!newPass) return;
+    if (newPass.length < 6) {
+      alert('A senha deve ter pelo menos 6 caracteres.');
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/users/${id}/reset-password`, {
+        method: 'PUT',
+        headers: { 
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ password: newPass })
+      });
+
+      if (res.ok) {
+        alert('Senha redefinida com sucesso!');
+      } else {
+        const err = await res.json();
+        alert(err.error || 'Erro ao redefinir senha');
+      }
+    } catch (error) {
+      console.error(error);
+      alert('Erro de conexão');
     }
   };
 
@@ -224,13 +254,22 @@ export default function Users() {
                 </div>
 
                 {u.id !== user?.id && (
-                  <button
-                    onClick={() => handleDelete(u.id)}
-                    className="text-red-500 hover:text-red-700 p-2 hover:bg-red-50 rounded-lg transition-colors"
-                    title="Excluir Usuário"
-                  >
-                    <Trash size={18} />
-                  </button>
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={() => handleResetPassword(u.id)}
+                      className="text-yellow-600 hover:text-yellow-800 p-2 hover:bg-yellow-50 rounded-lg transition-colors"
+                      title="Redefinir Senha"
+                    >
+                      <Key size={18} />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(u.id)}
+                      className="text-red-500 hover:text-red-700 p-2 hover:bg-red-50 rounded-lg transition-colors"
+                      title="Excluir Usuário"
+                    >
+                      <Trash size={18} />
+                    </button>
+                  </div>
                 )}
               </div>
             ))}

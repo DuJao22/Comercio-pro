@@ -72,7 +72,7 @@ export default function Layout({ children, activePage, onNavigate }: LayoutProps
         </nav>
 
         <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-slate-800">
-          <div className="flex items-center space-x-3 mb-4 px-2">
+          <div className="flex items-center space-x-3 mb-4 px-2 cursor-pointer hover:bg-slate-800 p-2 rounded-lg transition-colors" onClick={() => onNavigate('profile')}>
             <div className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center text-sm font-bold">
               {user?.name.charAt(0)}
             </div>
@@ -112,7 +112,7 @@ export default function Layout({ children, activePage, onNavigate }: LayoutProps
         </main>
 
         <footer className="bg-white border-t border-gray-200 p-4 text-center text-sm text-gray-500">
-          Sistema desenvolvido por João Layon
+          Sistema desenvolvido por D22
         </footer>
       </div>
     </div>

@@ -69,6 +69,7 @@ export async function initDb() {
       password TEXT NOT NULL,
       role TEXT NOT NULL CHECK(role IN ('superadmin', 'admin')),
       store_id INTEGER,
+      phone TEXT,
       FOREIGN KEY (store_id) REFERENCES stores(id)
     )`,
 
@@ -120,6 +121,17 @@ export async function initDb() {
 
   for (const query of queries) {
     await db.sql(query);
+  }
+
+  // Migration: Add phone column to users if not exists
+  try {
+    await db.sql('ALTER TABLE users ADD COLUMN phone TEXT');
+    console.log('Added phone column to users table');
+  } catch (error: any) {
+    // Ignore error if column already exists
+    if (!error.toString().includes('duplicate column name')) {
+      // console.error('Migration error (phone):', error);
+    }
   }
 
   // Seed initial data if empty

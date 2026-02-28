@@ -9,6 +9,7 @@ interface User {
   role: 'superadmin' | 'admin';
   store_id?: number;
   store_name?: string;
+  phone?: string;
 }
 
 interface Store {
@@ -28,6 +29,7 @@ export default function Users() {
   const [password, setPassword] = useState('');
   const [role, setRole] = useState<'admin' | 'superadmin'>('admin');
   const [storeId, setStoreId] = useState<number | ''>('');
+  const [phone, setPhone] = useState('');
 
   const fetchData = async () => {
     setLoading(true);
@@ -61,7 +63,7 @@ export default function Users() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify({ name, email, password, role, store_id: storeId })
+        body: JSON.stringify({ name, email, password, role, store_id: storeId, phone })
       });
 
       if (res.ok) {
@@ -70,6 +72,7 @@ export default function Users() {
         setPassword('');
         setRole('admin');
         setStoreId('');
+        setPhone('');
         fetchData();
         alert('Usuário criado com sucesso!');
       } else {
@@ -170,6 +173,17 @@ export default function Users() {
             </div>
 
             <div>
+              <label className="block text-sm font-medium text-slate-200 mb-1">Telefone (WhatsApp)</label>
+              <input
+                type="text"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-white"
+                placeholder="Ex: 5511999999999"
+              />
+            </div>
+
+            <div>
               <label className="block text-sm font-medium text-slate-200 mb-1">Senha</label>
               <input
                 type="password"
@@ -237,6 +251,7 @@ export default function Users() {
                   <div>
                     <p className="font-medium text-white">{u.name}</p>
                     <p className="text-sm text-slate-300">{u.email}</p>
+                    {u.phone && <p className="text-xs text-slate-400">{u.phone}</p>}
                     <div className="flex items-center mt-1 space-x-2">
                       <span className={`text-xs px-2 py-0.5 rounded uppercase font-bold ${
                         u.role === 'superadmin' ? 'bg-purple-900/30 text-purple-400' : 'bg-blue-900/30 text-blue-400'

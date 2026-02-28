@@ -289,7 +289,7 @@ app.get('/api/users', authenticateToken, async (req: any, res) => {
   
   try {
     const users = await db.prepare(`
-      SELECT u.id, u.name, u.email, u.role, u.store_id, s.name as store_name 
+      SELECT u.id, u.name, u.email, u.role, u.store_id, u.phone, s.name as store_name 
       FROM users u 
       LEFT JOIN stores s ON u.store_id = s.id
     `).all();
@@ -302,14 +302,14 @@ app.get('/api/users', authenticateToken, async (req: any, res) => {
 app.post('/api/users', authenticateToken, async (req: any, res) => {
   if (req.user.role !== 'superadmin') return res.status(403).json({ error: 'Acesso negado' });
   
-  const { name, email, password, role, store_id } = req.body;
+  const { name, email, password, role, store_id, phone } = req.body;
   
   try {
     const hashedPassword = bcrypt.hashSync(password, 10);
     await db.prepare(`
-      INSERT INTO users (name, email, password, role, store_id)
-      VALUES (?, ?, ?, ?, ?)
-    `).run(name, email, hashedPassword, role, store_id || null);
+      INSERT INTO users (name, email, password, role, store_id, phone)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `).run(name, email, hashedPassword, role, store_id || null, phone);
     res.json({ success: true });
   } catch (error: any) {
     if (error.toString().includes('UNIQUE')) {

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { TrendingUp, TrendingDown, Package, AlertTriangle, DollarSign, Clock, AlertCircle, CheckCircle } from 'lucide-react';
+import { TrendingUp, TrendingDown, Package, AlertTriangle, DollarSign, Clock, AlertCircle, CheckCircle, MessageCircle } from 'lucide-react';
 
 export default function Dashboard() {
   const { token, user } = useAuth();
@@ -182,19 +182,37 @@ export default function Dashboard() {
               <thead className="text-xs text-slate-300 uppercase bg-slate-800">
                 <tr>
                   <th className="px-4 py-2">Produto</th>
+                  <th className="px-4 py-2">Loja</th>
                   <th className="px-4 py-2">Qtd</th>
+                  <th className="px-4 py-2">Ação</th>
                 </tr>
               </thead>
               <tbody>
-                {stats.lowStock.map((p: any) => (
+                {stats.lowStock && stats.lowStock.map((p: any) => (
                   <tr key={p.id} className="border-b border-slate-800">
                     <td className="px-4 py-2 font-medium text-slate-200">{p.name}</td>
+                    <td className="px-4 py-2 text-slate-400">{p.store_name}</td>
                     <td className="px-4 py-2 text-red-400 font-bold">{p.stock_quantity}</td>
+                    <td className="px-4 py-2">
+                      {p.manager_phone ? (
+                        <a 
+                          href={`https://wa.me/${p.manager_phone.replace(/\D/g, '')}?text=Olá ${p.manager_name || 'Gerente'}, o produto ${p.name} está com baixo estoque (${p.stock_quantity} unidades). Gostaria de solicitar um novo pedido.`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-green-400 hover:text-green-300 transition-colors flex items-center"
+                          title="Solicitar Pedido via WhatsApp"
+                        >
+                          <MessageCircle size={18} />
+                        </a>
+                      ) : (
+                        <span className="text-slate-600 text-xs">Sem contato</span>
+                      )}
+                    </td>
                   </tr>
                 ))}
-                {stats.lowStock.length === 0 && (
+                {(!stats.lowStock || stats.lowStock.length === 0) && (
                   <tr>
-                    <td colSpan={2} className="px-4 py-2 text-center text-slate-500">Nenhum produto com estoque baixo.</td>
+                    <td colSpan={4} className="px-4 py-2 text-center text-slate-500">Nenhum produto com estoque baixo.</td>
                   </tr>
                 )}
               </tbody>

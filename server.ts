@@ -78,9 +78,9 @@ app.get('/api/dashboard', authenticateToken, async (req: any, res) => {
     let stats: any = {};
 
     if (role === 'superadmin') {
-      stats.totalStores = (await db.prepare('SELECT count(*) as count FROM stores').get() as any).count;
-      stats.totalProducts = (await db.prepare('SELECT count(*) as count FROM products').get() as any).count;
-      stats.totalMovements = (await db.prepare('SELECT count(*) as count FROM movements').get() as any).count;
+      stats.totalStores = (await db.prepare('SELECT count(*) as count FROM stores').get() as any)?.count || 0;
+      stats.totalProducts = (await db.prepare('SELECT count(*) as count FROM products').get() as any)?.count || 0;
+      stats.totalMovements = (await db.prepare('SELECT count(*) as count FROM movements').get() as any)?.count || 0;
       
       // Recent movements global
       stats.recentMovements = await db.prepare(`
@@ -93,7 +93,7 @@ app.get('/api/dashboard', authenticateToken, async (req: any, res) => {
 
       // Sales by day global
       stats.salesByDay = await db.prepare(`
-        SELECT strftime('%Y-%m-%d', timestamp) as date, SUM(quantity) as total
+        SELECT strftime('%Y-%m-%d', timestamp) as date, COALESCE(SUM(quantity), 0) as total
         FROM movements
         WHERE type = 'out'
         GROUP BY date
@@ -133,16 +133,16 @@ app.get('/api/dashboard', authenticateToken, async (req: any, res) => {
 
     } else {
       // Admin (Store specific)
-      stats.totalProducts = (await db.prepare('SELECT count(*) as count FROM products WHERE store_id = ?').get(store_id) as any).count;
+      stats.totalProducts = (await db.prepare('SELECT count(*) as count FROM products WHERE store_id = ?').get(store_id) as any)?.count || 0;
       stats.totalMovements = (await db.prepare(`
         SELECT count(*) as count FROM movements m 
         JOIN products p ON m.product_id = p.id 
         WHERE p.store_id = ?
-      `).get(store_id) as any).count;
+      `).get(store_id) as any)?.count || 0;
 
       // Sales by day store
       stats.salesByDay = await db.prepare(`
-        SELECT strftime('%Y-%m-%d', m.timestamp) as date, SUM(m.quantity) as total
+        SELECT strftime('%Y-%m-%d', m.timestamp) as date, COALESCE(SUM(m.quantity), 0) as total
         FROM movements m
         JOIN products p ON m.product_id = p.id
         WHERE m.type = 'out' AND p.store_id = ?

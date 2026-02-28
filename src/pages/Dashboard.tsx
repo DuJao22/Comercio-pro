@@ -81,14 +81,20 @@ export default function Dashboard() {
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#334155" />
                 <XAxis 
                   dataKey="date" 
-                  tickFormatter={(value) => new Date(value).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
+                  tickFormatter={(value) => {
+                    try { return new Date(value).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }); }
+                    catch { return value; }
+                  }}
                   tick={{ fontSize: 12, fill: '#cbd5e1' }}
                   axisLine={{ stroke: '#334155' }}
                 />
                 <YAxis tick={{ fontSize: 12, fill: '#cbd5e1' }} axisLine={{ stroke: '#334155' }} />
                 <Tooltip 
                   formatter={(value: number) => [value, 'Vendas']}
-                  labelFormatter={(label) => new Date(label).toLocaleDateString('pt-BR')}
+                  labelFormatter={(label) => {
+                    try { return new Date(label).toLocaleDateString('pt-BR'); }
+                    catch { return label; }
+                  }}
                   contentStyle={{ backgroundColor: '#1e293b', borderColor: '#334155', color: '#f8fafc' }}
                 />
                 <Bar dataKey="total" fill="#6366f1" radius={[4, 4, 0, 0]} name="Vendas" />
@@ -114,7 +120,7 @@ export default function Dashboard() {
                 Atrasados
               </h4>
               <div className="space-y-3">
-                {stats.financial.overdue.map((r: any) => (
+                {stats.financial.overdue?.map((r: any) => (
                   <div key={r.id} className="bg-slate-800 p-3 rounded border border-red-500/20 text-sm">
                     <p className="font-bold text-white">{r.client_name}</p>
                     <p className="text-xs text-slate-300">{r.store_name} - {r.product_name}</p>
@@ -123,7 +129,7 @@ export default function Dashboard() {
                     </p>
                   </div>
                 ))}
-                {stats.financial.overdue.length === 0 && <p className="text-xs text-slate-500">Nenhum pagamento atrasado.</p>}
+                {(!stats.financial.overdue || stats.financial.overdue.length === 0) && <p className="text-xs text-slate-500">Nenhum pagamento atrasado.</p>}
               </div>
             </div>
 
@@ -134,7 +140,7 @@ export default function Dashboard() {
                 A Prazo (Pendentes)
               </h4>
               <div className="space-y-3">
-                {stats.financial.pending.map((r: any) => (
+                {stats.financial.pending?.map((r: any) => (
                   <div key={r.id} className="bg-slate-800 p-3 rounded border border-yellow-500/20 text-sm">
                     <p className="font-bold text-white">{r.client_name}</p>
                     <p className="text-xs text-slate-300">{r.store_name} - {r.product_name}</p>
@@ -143,7 +149,7 @@ export default function Dashboard() {
                     </p>
                   </div>
                 ))}
-                {stats.financial.pending.length === 0 && <p className="text-xs text-slate-500">Nenhum pagamento pendente.</p>}
+                {(!stats.financial.pending || stats.financial.pending.length === 0) && <p className="text-xs text-slate-500">Nenhum pagamento pendente.</p>}
               </div>
             </div>
 
@@ -154,7 +160,7 @@ export default function Dashboard() {
                 Pagos Recentemente
               </h4>
               <div className="space-y-3">
-                {stats.financial.paid.map((r: any) => (
+                {stats.financial.paid?.map((r: any) => (
                   <div key={r.id} className="bg-slate-800 p-3 rounded border border-green-500/20 text-sm">
                     <p className="font-bold text-white">{r.client_name}</p>
                     <p className="text-xs text-slate-300">{r.store_name} - {r.product_name}</p>
@@ -163,7 +169,7 @@ export default function Dashboard() {
                     </p>
                   </div>
                 ))}
-                {stats.financial.paid.length === 0 && <p className="text-xs text-slate-500">Nenhum pagamento recente.</p>}
+                {(!stats.financial.paid || stats.financial.paid.length === 0) && <p className="text-xs text-slate-500">Nenhum pagamento recente.</p>}
               </div>
             </div>
           </div>
@@ -224,7 +230,7 @@ export default function Dashboard() {
         <div className="bg-slate-900 p-6 rounded-xl shadow-sm border border-slate-800">
           <h3 className="text-lg font-semibold mb-4 text-white">Últimas Movimentações</h3>
           <div className="space-y-4">
-            {stats.recentMovements.map((m: any) => (
+            {stats.recentMovements?.map((m: any) => (
               <div key={m.id} className="flex items-center justify-between border-b border-slate-800 pb-2 last:border-0">
                 <div>
                   <p className="font-medium text-white">{m.product_name}</p>
@@ -236,7 +242,7 @@ export default function Dashboard() {
                 </div>
               </div>
             ))}
-             {stats.recentMovements.length === 0 && (
+             {(!stats.recentMovements || stats.recentMovements.length === 0) && (
                 <p className="text-center text-slate-500 text-sm">Nenhuma movimentação recente.</p>
               )}
           </div>

@@ -62,6 +62,34 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {/* Sales Chart */}
+      {stats.salesByDay && stats.salesByDay.length > 0 && (
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+          <h3 className="text-lg font-semibold mb-4 flex items-center text-gray-800">
+            <TrendingUp size={20} className="mr-2 text-indigo-600" />
+            Vendas por Dia (Últimos 7 dias)
+          </h3>
+          <div className="h-64 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={stats.salesByDay}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                <XAxis 
+                  dataKey="date" 
+                  tickFormatter={(value) => new Date(value).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
+                  tick={{ fontSize: 12 }}
+                />
+                <YAxis tick={{ fontSize: 12 }} />
+                <Tooltip 
+                  formatter={(value: number) => [value, 'Vendas']}
+                  labelFormatter={(label) => new Date(label).toLocaleDateString('pt-BR')}
+                />
+                <Bar dataKey="total" fill="#4f46e5" radius={[4, 4, 0, 0]} name="Vendas" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
+
       {/* Financial Report (Superadmin Only) */}
       {user?.role === 'superadmin' && stats.financial && (
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">

@@ -81,8 +81,15 @@ app.get('/api/dashboard', authenticateToken, async (req: any, res) => {
         ORDER BY m.timestamp DESC LIMIT 5
       `).all();
 
-      // Low stock global
-      stats.lowStock = await db.prepare('SELECT * FROM products WHERE stock_quantity < 10').all();
+      // Sales by day global
+      stats.salesByDay = await db.prepare(`
+        SELECT strftime('%Y-%m-%d', timestamp) as date, SUM(quantity) as total
+        FROM movements
+        WHERE type = 'out'
+        GROUP BY date
+        ORDER BY date ASC
+        LIMIT 7
+      `).all();
 
       // Financial Report (Requests)
       const today = new Date().toISOString().split('T')[0];
@@ -122,6 +129,17 @@ app.get('/api/dashboard', authenticateToken, async (req: any, res) => {
         JOIN products p ON m.product_id = p.id 
         WHERE p.store_id = ?
       `).get(store_id) as any).count;
+
+      // Sales by day store
+      stats.salesByDay = await db.prepare(`
+        SELECT strftime('%Y-%m-%d', m.timestamp) as date, SUM(m.quantity) as total
+        FROM movements m
+        JOIN products p ON m.product_id = p.id
+        WHERE m.type = 'out' AND p.store_id = ?
+        GROUP BY date
+        ORDER BY date ASC
+        LIMIT 7
+      `).all(store_id);
 
       // Recent movements store
       stats.recentMovements = await db.prepare(`

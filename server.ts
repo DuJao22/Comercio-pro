@@ -15,8 +15,18 @@ const SECRET_KEY = process.env.JWT_SECRET || 'super-secret-key-change-in-product
 // Initialize DB
 initDb().catch(console.error);
 
+// Keep-alive for SQLite Cloud (every 5 minutes)
+setInterval(async () => {
+  try {
+    await db.prepare('SELECT 1').get();
+    console.log('Database keep-alive ping successful');
+  } catch (error) {
+    console.error('Database keep-alive ping failed:', error);
+  }
+}, 5 * 60 * 1000);
+
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = Number(process.env.PORT) || 3000;
 
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
@@ -91,33 +101,33 @@ app.get('/api/dashboard', authenticateToken, async (req: any, res) => {
         LIMIT 7
       `).all();
 
-      // Financial Report (Requests)
+      // Financial Report (Movements)
       const today = new Date().toISOString().split('T')[0];
       
       stats.financial = {
         paid: await db.prepare(`
-          SELECT r.*, s.name as store_name, p.name as product_name 
-          FROM requests r 
-          JOIN stores s ON r.store_id = s.id 
-          JOIN products p ON r.product_id = p.id 
-          WHERE r.payment_status = 'paid'
-          ORDER BY r.created_at DESC LIMIT 10
+          SELECT m.*, s.name as store_name, p.name as product_name 
+          FROM movements m 
+          JOIN products p ON m.product_id = p.id 
+          JOIN stores s ON p.store_id = s.id 
+          WHERE m.payment_status = 'paid' AND m.type = 'out'
+          ORDER BY m.timestamp DESC LIMIT 10
         `).all(),
         pending: await db.prepare(`
-          SELECT r.*, s.name as store_name, p.name as product_name 
-          FROM requests r 
-          JOIN stores s ON r.store_id = s.id 
-          JOIN products p ON r.product_id = p.id 
-          WHERE r.payment_status = 'pending' AND (r.payment_due_date >= ? OR r.payment_due_date IS NULL)
-          ORDER BY r.payment_due_date ASC LIMIT 10
+          SELECT m.*, s.name as store_name, p.name as product_name 
+          FROM movements m 
+          JOIN products p ON m.product_id = p.id 
+          JOIN stores s ON p.store_id = s.id 
+          WHERE m.payment_status = 'pending' AND m.type = 'out' AND (m.payment_due_date >= ? OR m.payment_due_date IS NULL)
+          ORDER BY m.payment_due_date ASC LIMIT 10
         `).all(today),
         overdue: await db.prepare(`
-          SELECT r.*, s.name as store_name, p.name as product_name 
-          FROM requests r 
-          JOIN stores s ON r.store_id = s.id 
-          JOIN products p ON r.product_id = p.id 
-          WHERE r.payment_status = 'pending' AND r.payment_due_date < ?
-          ORDER BY r.payment_due_date ASC
+          SELECT m.*, s.name as store_name, p.name as product_name 
+          FROM movements m 
+          JOIN products p ON m.product_id = p.id 
+          JOIN stores s ON p.store_id = s.id 
+          WHERE m.payment_status = 'pending' AND m.type = 'out' AND m.payment_due_date < ?
+          ORDER BY m.payment_due_date ASC
         `).all(today)
       };
 
@@ -199,15 +209,36 @@ app.post('/api/products', authenticateToken, async (req: any, res) => {
 app.put('/api/products/:id', authenticateToken, async (req: any, res) => {
   const { id } = req.params;
   const { name, description, category, weight, unit, stock_quantity, image } = req.body;
+  const userId = req.user.id;
   
   try {
-    await db.prepare(`
-      UPDATE products 
-      SET name = ?, description = ?, category = ?, weight = ?, unit = ?, stock_quantity = ?, image = ?
-      WHERE id = ?
-    `).run(name, description, category, weight, unit, stock_quantity, image, id);
+    const currentProduct = await db.prepare('SELECT stock_quantity FROM products WHERE id = ?').get(id) as any;
+    
+    if (!currentProduct) return res.status(404).json({ error: 'Produto não encontrado' });
+
+    await db.transaction(async () => {
+      // Check for stock change and record movement
+      if (stock_quantity !== undefined && stock_quantity !== currentProduct.stock_quantity) {
+        const diff = stock_quantity - currentProduct.stock_quantity;
+        const type = diff > 0 ? 'in' : 'out';
+        const quantity = Math.abs(diff);
+        
+        await db.prepare(`
+          INSERT INTO movements (product_id, type, quantity, user_id, observation)
+          VALUES (?, ?, ?, ?, 'Ajuste manual na edição do produto')
+        `).run(id, type, quantity, userId);
+      }
+
+      await db.prepare(`
+        UPDATE products 
+        SET name = ?, description = ?, category = ?, weight = ?, unit = ?, stock_quantity = ?, image = ?
+        WHERE id = ?
+      `).run(name, description, category, weight, unit, stock_quantity, image, id);
+    });
+
     res.json({ success: true });
   } catch (error) {
+    console.error(error);
     res.status(500).json({ error: 'Erro ao atualizar produto' });
   }
 });
@@ -249,70 +280,6 @@ app.post('/api/movements', authenticateToken, async (req: any, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Erro ao registrar movimentação' });
-  }
-});
-
-// Requests (Solicitações)
-app.get('/api/requests', authenticateToken, async (req: any, res) => {
-  const { role, store_id } = req.user;
-  
-  let query = `
-    SELECT r.*, s.name as store_name, p.name as product_name 
-    FROM requests r 
-    JOIN stores s ON r.store_id = s.id
-    JOIN products p ON r.product_id = p.id
-  `;
-  
-  const params = [];
-
-  if (role !== 'superadmin') {
-    query += ' WHERE r.store_id = ?';
-    params.push(store_id);
-  }
-  
-  query += ' ORDER BY r.created_at DESC';
-
-  try {
-    const requests = await db.prepare(query).all(...params);
-    res.json(requests);
-  } catch (error) {
-    res.status(500).json({ error: 'Erro ao buscar solicitações' });
-  }
-});
-
-app.post('/api/requests', authenticateToken, async (req: any, res) => {
-  if (req.user.role !== 'superadmin') return res.status(403).json({ error: 'Acesso negado' });
-  
-  const { store_id, product_id, quantity, client_name, client_phone, payment_status, payment_due_date } = req.body;
-  
-  try {
-    await db.prepare(`
-      INSERT INTO requests (store_id, product_id, quantity, status, client_name, client_phone, payment_status, payment_due_date)
-      VALUES (?, ?, ?, 'pending', ?, ?, ?, ?)
-    `).run(store_id, product_id, quantity, client_name, client_phone, payment_status, payment_due_date);
-    res.json({ success: true });
-  } catch (error) {
-    res.status(500).json({ error: 'Erro ao criar solicitação' });
-  }
-});
-
-app.put('/api/requests/:id/status', authenticateToken, async (req: any, res) => {
-  const { id } = req.params;
-  const { status } = req.body;
-  const { role, store_id } = req.user;
-
-  try {
-    const request = await db.prepare('SELECT * FROM requests WHERE id = ?').get(id) as any;
-    if (!request) return res.status(404).json({ error: 'Solicitação não encontrada' });
-
-    if (role !== 'superadmin' && request.store_id !== store_id) {
-      return res.status(403).json({ error: 'Acesso negado' });
-    }
-    
-    await db.prepare('UPDATE requests SET status = ? WHERE id = ?').run(status, id);
-    res.json({ success: true });
-  } catch (error) {
-    res.status(500).json({ error: 'Erro ao atualizar solicitação' });
   }
 });
 
@@ -416,83 +383,6 @@ app.put('/api/profile', authenticateToken, async (req: any, res) => {
       return res.status(400).json({ error: 'Email já cadastrado' });
     }
     res.status(500).json({ error: 'Erro ao atualizar perfil' });
-  }
-});
-
-// Shipments
-app.get('/api/shipments', authenticateToken, async (req: any, res) => {
-  if (req.user.role !== 'superadmin') return res.status(403).json({ error: 'Acesso negado' });
-  
-  try {
-    const shipments = await db.prepare(`
-      SELECT s.*, st.name as store_name 
-      FROM shipments s 
-      JOIN stores st ON s.destination_store_id = st.id
-      ORDER BY s.created_at DESC
-    `).all();
-    res.json(shipments);
-  } catch (error) {
-    res.status(500).json({ error: 'Erro ao buscar remessas' });
-  }
-});
-
-app.post('/api/shipments', authenticateToken, async (req: any, res) => {
-  if (req.user.role !== 'superadmin') return res.status(403).json({ error: 'Acesso negado' });
-  
-  const { product_name, quantity, destination_store_id } = req.body;
-  
-  try {
-    await db.prepare(`
-      INSERT INTO shipments (product_name, quantity, destination_store_id, status)
-      VALUES (?, ?, ?, 'pending')
-    `).run(product_name, quantity, destination_store_id);
-    res.json({ success: true });
-  } catch (error) {
-    res.status(500).json({ error: 'Erro ao criar remessa' });
-  }
-});
-
-app.put('/api/shipments/:id/status', authenticateToken, async (req: any, res) => {
-  if (req.user.role !== 'superadmin') return res.status(403).json({ error: 'Acesso negado' });
-  
-  const { id } = req.params;
-  const { status } = req.body;
-  
-  try {
-    const shipment = await db.prepare('SELECT * FROM shipments WHERE id = ?').get(id) as any;
-    if (!shipment) return res.status(404).json({ error: 'Remessa não encontrada' });
-
-    await db.transaction(async () => {
-      await db.prepare('UPDATE shipments SET status = ? WHERE id = ?').run(status, id);
-
-      if (status === 'received') {
-        const product = await db.prepare('SELECT id, stock_quantity FROM products WHERE name = ? AND store_id = ?').get(shipment.product_name, shipment.destination_store_id) as any;
-        
-        if (product) {
-          await db.prepare('UPDATE products SET stock_quantity = stock_quantity + ? WHERE id = ?').run(shipment.quantity, product.id);
-          await db.prepare(`
-            INSERT INTO movements (product_id, type, quantity, user_id, observation)
-            VALUES (?, 'in', ?, ?, 'Recebimento de Remessa #' || ?)
-          `).run(product.id, shipment.quantity, req.user.id, shipment.id);
-        } else {
-          const info = await db.prepare(`
-            INSERT INTO products (name, description, category, weight, unit, stock_quantity, store_id)
-            VALUES (?, 'Produto de remessa', 'Geral', 0, 'un', ?, ?)
-          `).run(shipment.product_name, shipment.quantity, shipment.destination_store_id);
-          
-          // @ts-ignore
-          await db.prepare(`
-            INSERT INTO movements (product_id, type, quantity, user_id, observation)
-            VALUES (?, 'in', ?, ?, 'Recebimento de Remessa #' || ? || ' (Novo Produto)')
-          `).run(info.lastInsertRowid, shipment.quantity, req.user.id, shipment.id);
-        }
-      }
-    });
-
-    res.json({ success: true });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Erro ao atualizar remessa' });
   }
 });
 

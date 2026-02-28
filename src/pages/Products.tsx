@@ -98,7 +98,7 @@ export default function Products() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-gray-800">Produtos</h2>
+        <h2 className="text-2xl font-bold text-white">Produtos</h2>
         <button 
           onClick={() => { setCurrentProduct({}); setIsModalOpen(true); }}
           className="bg-indigo-600 text-white px-4 py-2 rounded-lg flex items-center hover:bg-indigo-700 transition-colors"
@@ -110,21 +110,21 @@ export default function Products() {
 
       {/* Search */}
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-300" size={20} />
         <input
           type="text"
           placeholder="Buscar produtos..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+          className="w-full pl-10 pr-4 py-2 bg-slate-900 border border-slate-800 text-white rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none placeholder-slate-400"
         />
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+      <div className="bg-slate-900 rounded-xl shadow-sm border border-slate-800 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left">
-            <thead className="text-xs text-gray-700 uppercase bg-gray-50 border-b">
+            <thead className="text-xs text-slate-300 uppercase bg-slate-800 border-b border-slate-700">
               <tr>
                 <th className="px-6 py-3">Imagem</th>
                 <th className="px-6 py-3">Nome</th>
@@ -137,33 +137,33 @@ export default function Products() {
             </thead>
             <tbody>
               {filteredProducts.map((product) => (
-                <tr key={product.id} className="bg-white border-b hover:bg-gray-50">
+                <tr key={product.id} className="bg-slate-900 border-b border-slate-800 hover:bg-slate-800/50">
                   <td className="px-6 py-4">
                     {product.image ? (
                       <img src={product.image} alt={product.name} className="w-10 h-10 rounded object-cover" />
                     ) : (
-                      <div className="w-10 h-10 bg-gray-200 rounded flex items-center justify-center text-gray-400">
+                      <div className="w-10 h-10 bg-slate-800 rounded flex items-center justify-center text-slate-500">
                         <Package size={20} />
                       </div>
                     )}
                   </td>
-                  <td className="px-6 py-4 font-medium text-gray-900">{product.name}</td>
-                  <td className="px-6 py-4">{product.category}</td>
-                  <td className="px-6 py-4">{product.weight} {product.unit}</td>
-                  <td className={`px-6 py-4 font-bold ${product.stock_quantity < 10 ? 'text-red-600' : 'text-green-600'}`}>
+                  <td className="px-6 py-4 font-medium text-white">{product.name}</td>
+                  <td className="px-6 py-4 text-slate-200">{product.category}</td>
+                  <td className="px-6 py-4 text-slate-200">{product.weight} {product.unit}</td>
+                  <td className={`px-6 py-4 font-bold ${product.stock_quantity < 10 ? 'text-red-400' : 'text-green-400'}`}>
                     {product.stock_quantity}
                   </td>
-                  {user?.role === 'superadmin' && <td className="px-6 py-4">{product.store_name || '-'}</td>}
+                  {user?.role === 'superadmin' && <td className="px-6 py-4 text-slate-200">{product.store_name || '-'}</td>}
                   <td className="px-6 py-4 text-right space-x-2">
                     <button 
                       onClick={() => { setCurrentProduct(product); setIsModalOpen(true); }}
-                      className="text-blue-600 hover:text-blue-900"
+                      className="text-blue-400 hover:text-blue-300"
                     >
                       <Edit size={18} />
                     </button>
                     <button 
                       onClick={() => handleDelete(product.id)}
-                      className="text-red-600 hover:text-red-900"
+                      className="text-red-400 hover:text-red-300"
                     >
                       <Trash size={18} />
                     </button>
@@ -172,7 +172,7 @@ export default function Products() {
               ))}
               {filteredProducts.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-6 py-4 text-center text-gray-500">Nenhum produto encontrado.</td>
+                  <td colSpan={7} className="px-6 py-4 text-center text-slate-400">Nenhum produto encontrado.</td>
                 </tr>
               )}
             </tbody>
@@ -182,77 +182,75 @@ export default function Products() {
 
       {/* Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-100 flex justify-between items-center">
-              <h3 className="text-xl font-bold text-gray-800">{currentProduct.id ? 'Editar Produto' : 'Novo Produto'}</h3>
-              <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-600">
+        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-900 rounded-xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto border border-slate-800">
+            <div className="p-6 border-b border-slate-800 flex justify-between items-center">
+              <h3 className="text-xl font-bold text-white">{currentProduct.id ? 'Editar Produto' : 'Novo Produto'}</h3>
+              <button onClick={() => setIsModalOpen(false)} className="text-slate-300 hover:text-white">
                 <X size={24} />
               </button>
             </div>
             
             <form onSubmit={handleSave} className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Nome do Produto</label>
+                <label className="block text-sm font-medium text-slate-200 mb-1">Nome do Produto</label>
                 <input
                   type="text"
                   value={currentProduct.name || ''}
                   onChange={e => setCurrentProduct({...currentProduct, name: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                  className="w-full px-3 py-2 bg-slate-800 border border-slate-700 text-white rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
                   required
                 />
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Descrição</label>
+                <label className="block text-sm font-medium text-slate-200 mb-1">Descrição</label>
                 <textarea
                   value={currentProduct.description || ''}
                   onChange={e => setCurrentProduct({...currentProduct, description: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                  className="w-full px-3 py-2 bg-slate-800 border border-slate-700 text-white rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
                   rows={3}
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Categoria</label>
+                  <label className="block text-sm font-medium text-slate-200 mb-1">Categoria</label>
                   <input
                     type="text"
                     value={currentProduct.category || ''}
                     onChange={e => setCurrentProduct({...currentProduct, category: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                    className="w-full px-3 py-2 bg-slate-800 border border-slate-700 text-white rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Estoque Inicial</label>
+                  <label className="block text-sm font-medium text-slate-200 mb-1">Estoque Atual</label>
                   <input
                     type="number"
                     value={currentProduct.stock_quantity || 0}
                     onChange={e => setCurrentProduct({...currentProduct, stock_quantity: Number(e.target.value)})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
-                    disabled={!!currentProduct.id} // Disable stock edit directly, force movement
+                    className="w-full px-3 py-2 bg-slate-800 border border-slate-700 text-white rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
                   />
-                  {currentProduct.id && <p className="text-xs text-gray-500 mt-1">Use a aba Estoque para alterar.</p>}
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Peso</label>
+                  <label className="block text-sm font-medium text-slate-200 mb-1">Peso</label>
                   <input
                     type="number"
                     step="0.01"
                     value={currentProduct.weight || 0}
                     onChange={e => setCurrentProduct({...currentProduct, weight: Number(e.target.value)})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                    className="w-full px-3 py-2 bg-slate-800 border border-slate-700 text-white rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Unidade</label>
+                  <label className="block text-sm font-medium text-slate-200 mb-1">Unidade</label>
                   <select
                     value={currentProduct.unit || 'un'}
                     onChange={e => setCurrentProduct({...currentProduct, unit: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                    className="w-full px-3 py-2 bg-slate-800 border border-slate-700 text-white rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
                   >
                     <option value="un">Unidade (un)</option>
                     <option value="kg">Quilograma (kg)</option>
@@ -263,15 +261,15 @@ export default function Products() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Imagem do Produto</label>
+                <label className="block text-sm font-medium text-slate-200 mb-1">Imagem do Produto</label>
                 <input
                   type="file"
                   accept="image/*"
                   onChange={handleImageUpload}
-                  className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
+                  className="w-full text-sm text-slate-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-500/10 file:text-indigo-400 hover:file:bg-indigo-500/20"
                 />
                 {currentProduct.image && (
-                  <img src={currentProduct.image} alt="Preview" className="mt-2 h-20 w-20 object-cover rounded-lg border" />
+                  <img src={currentProduct.image} alt="Preview" className="mt-2 h-20 w-20 object-cover rounded-lg border border-slate-700" />
                 )}
               </div>
 
@@ -279,7 +277,7 @@ export default function Products() {
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                  className="px-4 py-2 text-white hover:bg-slate-800 rounded-lg transition-colors"
                 >
                   Cancelar
                 </button>

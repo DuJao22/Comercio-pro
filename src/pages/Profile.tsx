@@ -47,65 +47,65 @@ export default function Profile() {
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
-      <h2 className="text-2xl font-bold text-gray-800">Meu Perfil</h2>
+      <h2 className="text-2xl font-bold text-white">Meu Perfil</h2>
 
-      <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+      <div className="bg-slate-900 p-6 rounded-xl shadow-sm border border-slate-800">
         <form onSubmit={handleUpdate} className="space-y-6">
           
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold flex items-center text-gray-700">
-              <User size={20} className="mr-2" />
+            <h3 className="text-lg font-semibold flex items-center text-slate-200">
+              <User size={20} className="mr-2 text-indigo-400" />
               Informações Pessoais
             </h3>
             
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Nome</label>
+              <label className="block text-sm font-medium text-slate-200 mb-1">Nome</label>
               <input
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-white"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+              <label className="block text-sm font-medium text-slate-200 mb-1">Email</label>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-white"
                 required
               />
             </div>
           </div>
 
-          <div className="border-t border-gray-100 pt-6 space-y-4">
-            <h3 className="text-lg font-semibold flex items-center text-gray-700">
-              <Lock size={20} className="mr-2" />
+          <div className="border-t border-slate-800 pt-6 space-y-4">
+            <h3 className="text-lg font-semibold flex items-center text-slate-200">
+              <Lock size={20} className="mr-2 text-indigo-400" />
               Alterar Senha
             </h3>
-            <p className="text-sm text-gray-500">Preencha apenas se desejar alterar sua senha.</p>
+            <p className="text-sm text-slate-300">Preencha apenas se desejar alterar sua senha.</p>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Senha Atual</label>
+              <label className="block text-sm font-medium text-slate-200 mb-1">Senha Atual</label>
               <input
                 type="password"
                 value={currentPassword}
                 onChange={(e) => setCurrentPassword(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-white"
                 placeholder="Necessário para alterar a senha"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Nova Senha</label>
+              <label className="block text-sm font-medium text-slate-200 mb-1">Nova Senha</label>
               <input
                 type="password"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-white"
                 placeholder="Mínimo 6 caracteres"
               />
             </div>

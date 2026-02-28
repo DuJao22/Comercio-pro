@@ -59,36 +59,36 @@ export default function Stores() {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold text-gray-800">Gestão de Lojas</h2>
+      <h2 className="text-2xl font-bold text-white">Gestão de Lojas</h2>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Create Form */}
-        <div className="lg:col-span-1 bg-white p-6 rounded-xl shadow-sm border border-gray-100 h-fit">
-          <h3 className="text-lg font-semibold mb-4 flex items-center">
-            <Plus size={20} className="mr-2 text-indigo-600" />
+        <div className="lg:col-span-1 bg-slate-900 p-6 rounded-xl shadow-sm border border-slate-800 h-fit">
+          <h3 className="text-lg font-semibold mb-4 flex items-center text-white">
+            <Plus size={20} className="mr-2 text-indigo-400" />
             Nova Loja
           </h3>
           
           <form onSubmit={handleCreate} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Nome da Loja</label>
+              <label className="block text-sm font-medium text-slate-200 mb-1">Nome da Loja</label>
               <input
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-white placeholder-slate-400"
                 placeholder="Ex: Loja Centro"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Localização</label>
+              <label className="block text-sm font-medium text-slate-200 mb-1">Localização</label>
               <input
                 type="text"
                 value={location}
                 onChange={(e) => setLocation(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-white placeholder-slate-400"
                 placeholder="Ex: Rua Principal, 123"
                 required
               />
@@ -106,13 +106,13 @@ export default function Stores() {
         {/* Stores List */}
         <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
           {stores.map((s) => (
-            <div key={s.id} className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-start space-x-4">
-              <div className="p-3 bg-indigo-50 text-indigo-600 rounded-lg">
+            <div key={s.id} className="bg-slate-900 p-6 rounded-xl shadow-sm border border-slate-800 flex items-start space-x-4">
+              <div className="p-3 bg-indigo-900/30 text-indigo-400 rounded-lg">
                 <StoreIcon size={24} />
               </div>
               <div>
-                <h4 className="font-bold text-gray-800 text-lg">{s.name}</h4>
-                <p className="text-gray-500 flex items-center mt-1 text-sm">
+                <h4 className="font-bold text-white text-lg">{s.name}</h4>
+                <p className="text-slate-300 flex items-center mt-1 text-sm">
                   <MapPin size={16} className="mr-1" />
                   {s.location}
                 </p>
@@ -120,7 +120,7 @@ export default function Stores() {
             </div>
           ))}
           {stores.length === 0 && (
-            <p className="col-span-2 text-center text-gray-500 py-8">Nenhuma loja cadastrada.</p>
+            <p className="col-span-2 text-center text-slate-400 py-8">Nenhuma loja cadastrada.</p>
           )}
         </div>
       </div>

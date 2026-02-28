@@ -115,16 +115,6 @@ export async function initDb() {
       created_at TEXT DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (store_id) REFERENCES stores(id),
       FOREIGN KEY (product_id) REFERENCES products(id)
-    )`,
-
-    `CREATE TABLE IF NOT EXISTS shipments (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      product_name TEXT NOT NULL,
-      quantity INTEGER NOT NULL,
-      destination_store_id INTEGER NOT NULL,
-      status TEXT NOT NULL CHECK(status IN ('pending', 'sent', 'received')),
-      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (destination_store_id) REFERENCES stores(id)
     )`
   ];
 

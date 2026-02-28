@@ -136,56 +136,56 @@ export default function Users() {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold text-gray-800">Gestão de Usuários</h2>
+      <h2 className="text-2xl font-bold text-white">Gestão de Usuários</h2>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Create Form */}
-        <div className="lg:col-span-1 bg-white p-6 rounded-xl shadow-sm border border-gray-100 h-fit">
-          <h3 className="text-lg font-semibold mb-4 flex items-center">
-            <UserPlus size={20} className="mr-2 text-indigo-600" />
+        <div className="lg:col-span-1 bg-slate-900 p-6 rounded-xl shadow-sm border border-slate-800 h-fit">
+          <h3 className="text-lg font-semibold mb-4 flex items-center text-white">
+            <UserPlus size={20} className="mr-2 text-indigo-400" />
             Novo Usuário
           </h3>
           
           <form onSubmit={handleCreate} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Nome</label>
+              <label className="block text-sm font-medium text-slate-200 mb-1">Nome</label>
               <input
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-white"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+              <label className="block text-sm font-medium text-slate-200 mb-1">Email</label>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-white"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Senha</label>
+              <label className="block text-sm font-medium text-slate-200 mb-1">Senha</label>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-white"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Cargo</label>
+              <label className="block text-sm font-medium text-slate-200 mb-1">Cargo</label>
               <select
                 value={role}
                 onChange={(e) => setRole(e.target.value as 'admin' | 'superadmin')}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-white"
               >
                 <option value="admin">Admin de Loja</option>
                 <option value="superadmin">Superadmin</option>
@@ -194,11 +194,11 @@ export default function Users() {
 
             {role === 'admin' && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Loja Vinculada</label>
+                <label className="block text-sm font-medium text-slate-200 mb-1">Loja Vinculada</label>
                 <select
                   value={storeId}
                   onChange={(e) => setStoreId(Number(e.target.value))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                  className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-white"
                   required
                 >
                   <option value="">Selecione uma loja...</option>
@@ -219,32 +219,32 @@ export default function Users() {
         </div>
 
         {/* Users List */}
-        <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-          <h3 className="text-lg font-semibold mb-4 flex items-center">
-            <UsersIcon size={20} className="mr-2 text-gray-600" />
+        <div className="lg:col-span-2 bg-slate-900 p-6 rounded-xl shadow-sm border border-slate-800">
+          <h3 className="text-lg font-semibold mb-4 flex items-center text-white">
+            <UsersIcon size={20} className="mr-2 text-slate-400" />
             Usuários Cadastrados
           </h3>
           
           <div className="space-y-4">
             {users.map((u) => (
-              <div key={u.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-100">
+              <div key={u.id} className="flex items-center justify-between p-4 bg-slate-800 rounded-lg border border-slate-700">
                 <div className="flex items-start space-x-3">
                   <div className={`mt-1 p-2 rounded-full ${
-                    u.role === 'superadmin' ? 'bg-purple-100 text-purple-600' : 'bg-blue-100 text-blue-600'
+                    u.role === 'superadmin' ? 'bg-purple-900/30 text-purple-400' : 'bg-blue-900/30 text-blue-400'
                   }`}>
                     <UsersIcon size={20} />
                   </div>
                   <div>
-                    <p className="font-medium text-gray-900">{u.name}</p>
-                    <p className="text-sm text-gray-500">{u.email}</p>
+                    <p className="font-medium text-white">{u.name}</p>
+                    <p className="text-sm text-slate-300">{u.email}</p>
                     <div className="flex items-center mt-1 space-x-2">
                       <span className={`text-xs px-2 py-0.5 rounded uppercase font-bold ${
-                        u.role === 'superadmin' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'
+                        u.role === 'superadmin' ? 'bg-purple-900/30 text-purple-400' : 'bg-blue-900/30 text-blue-400'
                       }`}>
                         {u.role}
                       </span>
                       {u.store_name && (
-                        <span className="text-xs text-gray-500 flex items-center">
+                        <span className="text-xs text-slate-300 flex items-center">
                           <Store size={12} className="mr-1" />
                           {u.store_name}
                         </span>
@@ -257,14 +257,14 @@ export default function Users() {
                   <div className="flex space-x-2">
                     <button
                       onClick={() => handleResetPassword(u.id)}
-                      className="text-yellow-600 hover:text-yellow-800 p-2 hover:bg-yellow-50 rounded-lg transition-colors"
+                      className="text-yellow-500 hover:text-yellow-400 p-2 hover:bg-yellow-900/20 rounded-lg transition-colors"
                       title="Redefinir Senha"
                     >
                       <Key size={18} />
                     </button>
                     <button
                       onClick={() => handleDelete(u.id)}
-                      className="text-red-500 hover:text-red-700 p-2 hover:bg-red-50 rounded-lg transition-colors"
+                      className="text-red-500 hover:text-red-400 p-2 hover:bg-red-900/20 rounded-lg transition-colors"
                       title="Excluir Usuário"
                     >
                       <Trash size={18} />
@@ -274,7 +274,7 @@ export default function Users() {
               </div>
             ))}
             {users.length === 0 && (
-              <p className="text-center text-gray-500 py-8">Nenhum usuário encontrado.</p>
+              <p className="text-center text-slate-400 py-8">Nenhum usuário encontrado.</p>
             )}
           </div>
         </div>

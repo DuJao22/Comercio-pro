@@ -5,10 +5,7 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Products from './pages/Products';
 import Movements from './pages/Movements';
-import Shipments from './pages/Shipments';
 import Stores from './pages/Stores';
-
-import Requests from './pages/Requests';
 
 import Users from './pages/Users';
 
@@ -27,8 +24,6 @@ function AppContent() {
       case 'dashboard': return <Dashboard />;
       case 'products': return <Products />;
       case 'movements': return <Movements />;
-      case 'requests': return <Requests />;
-      case 'shipments': return <Shipments />;
       case 'stores': return <Stores />;
       case 'users': return <Users />;
       case 'profile': return <Profile />;

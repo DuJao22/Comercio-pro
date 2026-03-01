@@ -13,7 +13,17 @@ const __dirname = path.dirname(__filename);
 const SECRET_KEY = process.env.JWT_SECRET || 'super-secret-key-change-in-production';
 
 // Initialize DB
-initDb().catch(console.error);
+initDb().then(async () => {
+  // Double check phone column existence
+  try {
+    await db.sql('ALTER TABLE users ADD COLUMN phone TEXT');
+    console.log('Phone column added via secondary check');
+  } catch (e: any) {
+    if (!e.toString().includes('duplicate column name')) {
+      console.error('Secondary migration check failed:', e);
+    }
+  }
+}).catch(console.error);
 
 // Keep-alive for SQLite Cloud (every 5 minutes)
 setInterval(async () => {
@@ -39,13 +49,31 @@ const authenticateToken = (req: any, res: Response, next: NextFunction) => {
   if (!token) return res.sendStatus(401);
 
   jwt.verify(token, SECRET_KEY, (err: any, user: any) => {
-    if (err) return res.sendStatus(403);
+    if (err) {
+      if (err.name === 'TokenExpiredError') {
+        console.log('Token expired, sending 403');
+      } else {
+        console.error('JWT Verification Error:', err.message);
+      }
+      return res.sendStatus(403);
+    }
     req.user = user;
     next();
   });
 };
 
 // --- API Routes ---
+
+// Health Check DB
+app.get('/api/health-db', async (req, res) => {
+  try {
+    await db.prepare('SELECT 1').get();
+    res.json({ status: 'ok', database: 'connected' });
+  } catch (error) {
+    console.error('Database health check failed:', error);
+    res.status(500).json({ status: 'error', database: 'disconnected', error: (error as any).message });
+  }
+});
 
 // Auth
 app.post('/api/login', async (req, res) => {
@@ -72,103 +100,183 @@ app.post('/api/login', async (req, res) => {
 
 // Dashboard Stats
 app.get('/api/dashboard', authenticateToken, async (req: any, res) => {
-  const { role, store_id } = req.user;
+  const { role } = req.user;
+  const store_id = req.user.store_id || null; // Ensure store_id is not undefined
+  console.log(`Dashboard request for role: ${role}, store_id: ${store_id}`);
   
   try {
     let stats: any = {};
 
     if (role === 'superadmin') {
-      stats.totalStores = (await db.prepare('SELECT count(*) as count FROM stores').get() as any)?.count || 0;
-      stats.totalProducts = (await db.prepare('SELECT count(*) as count FROM products').get() as any)?.count || 0;
-      stats.totalMovements = (await db.prepare('SELECT count(*) as count FROM movements').get() as any)?.count || 0;
+      try {
+        stats.totalStores = (await db.prepare('SELECT count(*) as count FROM stores').get() as any)?.count || 0;
+      } catch (e) { console.error('Error fetching stores count:', e); stats.totalStores = 0; }
+
+      try {
+        stats.totalProducts = (await db.prepare('SELECT count(*) as count FROM products').get() as any)?.count || 0;
+      } catch (e) { console.error('Error fetching products count:', e); stats.totalProducts = 0; }
+
+      try {
+        stats.totalMovements = (await db.prepare('SELECT count(*) as count FROM movements').get() as any)?.count || 0;
+      } catch (e) { console.error('Error fetching movements count:', e); stats.totalMovements = 0; }
       
       // Recent movements global
-      stats.recentMovements = await db.prepare(`
-        SELECT m.*, p.name as product_name, u.name as user_name 
-        FROM movements m 
-        JOIN products p ON m.product_id = p.id 
-        JOIN users u ON m.user_id = u.id 
-        ORDER BY m.timestamp DESC LIMIT 5
-      `).all();
+      try {
+        stats.recentMovements = await db.prepare(`
+          SELECT m.*, p.name as product_name, u.name as user_name 
+          FROM movements m 
+          JOIN products p ON m.product_id = p.id 
+          JOIN users u ON m.user_id = u.id 
+          ORDER BY m.timestamp DESC LIMIT 5
+        `).all();
+      } catch (e) { console.error('Error fetching recent movements:', e); stats.recentMovements = []; }
 
       // Sales by day global
-      stats.salesByDay = await db.prepare(`
-        SELECT strftime('%Y-%m-%d', timestamp) as date, COALESCE(SUM(quantity), 0) as total
-        FROM movements
-        WHERE type = 'out'
-        GROUP BY date
-        ORDER BY date ASC
-        LIMIT 7
-      `).all();
+      try {
+        stats.salesByDay = await db.prepare(`
+          SELECT strftime('%Y-%m-%d', timestamp) as date, COALESCE(SUM(quantity), 0) as total
+          FROM movements
+          WHERE type = 'out'
+          GROUP BY date
+          ORDER BY date ASC
+          LIMIT 7
+        `).all();
+      } catch (e) { console.error('Error fetching sales by day:', e); stats.salesByDay = []; }
 
       // Financial Report (Movements)
       const today = new Date().toISOString().split('T')[0];
+      stats.financial = { paid: [], pending: [], overdue: [] };
       
-      stats.financial = {
-        paid: await db.prepare(`
+      try {
+        stats.financial.paid = await db.prepare(`
           SELECT m.*, s.name as store_name, p.name as product_name 
           FROM movements m 
           JOIN products p ON m.product_id = p.id 
           JOIN stores s ON p.store_id = s.id 
           WHERE m.payment_status = 'paid' AND m.type = 'out'
           ORDER BY m.timestamp DESC LIMIT 10
-        `).all(),
-        pending: await db.prepare(`
+        `).all();
+      } catch (e) { console.error('Error fetching financial paid:', e); }
+
+      try {
+        stats.financial.pending = await db.prepare(`
           SELECT m.*, s.name as store_name, p.name as product_name 
           FROM movements m 
           JOIN products p ON m.product_id = p.id 
           JOIN stores s ON p.store_id = s.id 
           WHERE m.payment_status = 'pending' AND m.type = 'out' AND (m.payment_due_date >= ? OR m.payment_due_date IS NULL)
           ORDER BY m.payment_due_date ASC LIMIT 10
-        `).all(today),
-        overdue: await db.prepare(`
+        `).all(today);
+      } catch (e) { console.error('Error fetching financial pending:', e); }
+
+      try {
+        stats.financial.overdue = await db.prepare(`
           SELECT m.*, s.name as store_name, p.name as product_name 
           FROM movements m 
           JOIN products p ON m.product_id = p.id 
           JOIN stores s ON p.store_id = s.id 
           WHERE m.payment_status = 'pending' AND m.type = 'out' AND m.payment_due_date < ?
           ORDER BY m.payment_due_date ASC
-        `).all(today)
-      };
+        `).all(today);
+      } catch (e) { console.error('Error fetching financial overdue:', e); }
 
+      // Low stock global
+      try {
+        stats.lowStock = await db.prepare(`
+          SELECT p.*, s.name as store_name, u.name as manager_name, u.phone as manager_phone
+          FROM products p
+          JOIN stores s ON p.store_id = s.id
+          LEFT JOIN users u ON u.store_id = s.id AND u.role = 'admin'
+          WHERE p.stock_quantity < 10
+        `).all();
+      } catch (e) { 
+        console.error('Error fetching low stock (primary):', e);
+        // Fallback query without phone column if it fails (e.g. column missing)
+        try {
+          stats.lowStock = await db.prepare(`
+            SELECT p.*, s.name as store_name, u.name as manager_name
+            FROM products p
+            JOIN stores s ON p.store_id = s.id
+            LEFT JOIN users u ON u.store_id = s.id AND u.role = 'admin'
+            WHERE p.stock_quantity < 10
+          `).all();
+          console.log('Low stock fetched using fallback query');
+        } catch (e2) {
+          console.error('Error fetching low stock (fallback):', e2);
+          stats.lowStock = [];
+        }
+      }
     } else {
       // Admin (Store specific)
-      stats.totalProducts = (await db.prepare('SELECT count(*) as count FROM products WHERE store_id = ?').get(store_id) as any)?.count || 0;
-      stats.totalMovements = (await db.prepare(`
-        SELECT count(*) as count FROM movements m 
-        JOIN products p ON m.product_id = p.id 
-        WHERE p.store_id = ?
-      `).get(store_id) as any)?.count || 0;
+      try {
+        stats.totalProducts = (await db.prepare('SELECT count(*) as count FROM products WHERE store_id = ?').get(store_id) as any)?.count || 0;
+      } catch (e) { console.error('Error fetching admin products count:', e); stats.totalProducts = 0; }
+
+      try {
+        stats.totalMovements = (await db.prepare(`
+          SELECT count(*) as count FROM movements m 
+          JOIN products p ON m.product_id = p.id 
+          WHERE p.store_id = ?
+        `).get(store_id) as any)?.count || 0;
+      } catch (e) { console.error('Error fetching admin movements count:', e); stats.totalMovements = 0; }
 
       // Sales by day store
-      stats.salesByDay = await db.prepare(`
-        SELECT strftime('%Y-%m-%d', m.timestamp) as date, COALESCE(SUM(m.quantity), 0) as total
-        FROM movements m
-        JOIN products p ON m.product_id = p.id
-        WHERE m.type = 'out' AND p.store_id = ?
-        GROUP BY date
-        ORDER BY date ASC
-        LIMIT 7
-      `).all(store_id);
+      try {
+        stats.salesByDay = await db.prepare(`
+          SELECT strftime('%Y-%m-%d', m.timestamp) as date, COALESCE(SUM(m.quantity), 0) as total
+          FROM movements m
+          JOIN products p ON m.product_id = p.id
+          WHERE m.type = 'out' AND p.store_id = ?
+          GROUP BY date
+          ORDER BY date ASC
+          LIMIT 7
+        `).all(store_id);
+      } catch (e) { console.error('Error fetching admin sales by day:', e); stats.salesByDay = []; }
 
       // Recent movements store
-      stats.recentMovements = await db.prepare(`
-        SELECT m.*, p.name as product_name, u.name as user_name 
-        FROM movements m 
-        JOIN products p ON m.product_id = p.id 
-        JOIN users u ON m.user_id = u.id 
-        WHERE p.store_id = ?
-        ORDER BY m.timestamp DESC LIMIT 5
-      `).all(store_id);
+      try {
+        stats.recentMovements = await db.prepare(`
+          SELECT m.*, p.name as product_name, u.name as user_name 
+          FROM movements m 
+          JOIN products p ON m.product_id = p.id 
+          JOIN users u ON m.user_id = u.id 
+          WHERE p.store_id = ?
+          ORDER BY m.timestamp DESC LIMIT 5
+        `).all(store_id);
+      } catch (e) { console.error('Error fetching admin recent movements:', e); stats.recentMovements = []; }
 
       // Low stock store
-      stats.lowStock = await db.prepare('SELECT * FROM products WHERE store_id = ? AND stock_quantity < 10').all(store_id);
+      try {
+        stats.lowStock = await db.prepare(`
+          SELECT p.*, s.name as store_name, u.name as manager_name, u.phone as manager_phone
+          FROM products p
+          JOIN stores s ON p.store_id = s.id
+          LEFT JOIN users u ON u.store_id = s.id AND u.role = 'admin'
+          WHERE p.store_id = ? AND p.stock_quantity < 10
+        `).all(store_id);
+      } catch (e) { 
+        console.error('Error fetching admin low stock (primary):', e); 
+        // Fallback query without phone
+        try {
+          stats.lowStock = await db.prepare(`
+            SELECT p.*, s.name as store_name, u.name as manager_name
+            FROM products p
+            JOIN stores s ON p.store_id = s.id
+            LEFT JOIN users u ON u.store_id = s.id AND u.role = 'admin'
+            WHERE p.store_id = ? AND p.stock_quantity < 10
+          `).all(store_id);
+        } catch (e2) {
+          console.error('Error fetching admin low stock (fallback):', e2);
+          stats.lowStock = []; 
+        }
+      }
     }
 
+    console.log('Dashboard data prepared successfully');
     res.json(stats);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Erro ao carregar dashboard' });
+    console.error('CRITICAL DASHBOARD ERROR:', error);
+    res.status(500).json({ error: 'Erro ao carregar dashboard: ' + (error as any).message });
   }
 });
 
@@ -404,6 +512,16 @@ app.post('/api/stores', authenticateToken, async (req: any, res) => {
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: 'Erro ao criar loja' });
+  }
+});
+
+// Temporary schema check
+app.get('/api/debug/schema', async (req, res) => {
+  try {
+    const tableInfo = await db.prepare("PRAGMA table_info(users)").all();
+    res.json(tableInfo);
+  } catch (error) {
+    res.status(500).json({ error: 'Error checking schema', details: error });
   }
 });
 

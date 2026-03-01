@@ -4,21 +4,30 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsive
 import { TrendingUp, TrendingDown, Package, AlertTriangle, DollarSign, Clock, AlertCircle, CheckCircle, MessageCircle } from 'lucide-react';
 
 export default function Dashboard() {
-  const { token, user } = useAuth();
+  const { token, user, logout } = useAuth();
   const [stats, setStats] = useState<any>(null);
   const [error, setError] = useState('');
 
   useEffect(() => {
+    if (!token) return;
+
     fetch('/api/dashboard', {
       headers: { Authorization: `Bearer ${token}` }
     })
-      .then(res => {
-        if (!res.ok) throw new Error('Falha ao carregar dados');
+      .then(async res => {
+        if (res.status === 401 || res.status === 403) {
+          logout();
+          throw new Error('Sessão expirada. Faça login novamente.');
+        }
+        if (!res.ok) {
+          const errorData = await res.json().catch(() => ({}));
+          throw new Error(errorData.error || `Erro ${res.status}: Falha ao carregar dados`);
+        }
         return res.json();
       })
       .then(data => setStats(data))
       .catch(err => setError(err.message));
-  }, [token]);
+  }, [token, logout]);
 
   if (error) return <div className="text-red-500 p-4">Erro: {error}</div>;
   if (!stats) return <div className="text-slate-400 p-4">Carregando dashboard...</div>;
@@ -202,7 +211,7 @@ export default function Dashboard() {
                     <td className="px-4 py-2">
                       {p.manager_phone ? (
                         <a 
-                          href={`https://wa.me/${p.manager_phone.replace(/\D/g, '')}?text=Olá ${p.manager_name || 'Gerente'}, o produto ${p.name} está com baixo estoque (${p.stock_quantity} unidades). Gostaria de solicitar um novo pedido.`}
+                          href={`https://wa.me/${String(p.manager_phone).replace(/\D/g, '')}?text=Olá ${p.manager_name || 'Gerente'}, o produto ${p.name} está com baixo estoque (${p.stock_quantity} unidades). Gostaria de solicitar um novo pedido.`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-green-400 hover:text-green-300 transition-colors flex items-center"

@@ -16,12 +16,17 @@ const SECRET_KEY = process.env.JWT_SECRET || 'super-secret-key-change-in-product
 initDb().then(async () => {
   // Double check phone column existence
   try {
-    await db.sql('ALTER TABLE users ADD COLUMN phone TEXT');
-    console.log('Phone column added via secondary check');
-  } catch (e: any) {
-    if (!e.toString().includes('duplicate column name')) {
-      console.error('Secondary migration check failed:', e);
+    const tableInfo = await db.prepare("PRAGMA table_info(users)").all() as any[];
+    const hasPhone = tableInfo.some(col => col.name === 'phone');
+    
+    if (!hasPhone) {
+      await db.sql('ALTER TABLE users ADD COLUMN phone TEXT');
+      console.log('Phone column added via secondary check');
+    } else {
+      console.log('Phone column already exists, skipping migration');
     }
+  } catch (e: any) {
+    console.error('Secondary migration check failed:', e);
   }
 }).catch(console.error);
 
@@ -491,6 +496,50 @@ app.put('/api/profile', authenticateToken, async (req: any, res) => {
       return res.status(400).json({ error: 'Email já cadastrado' });
     }
     res.status(500).json({ error: 'Erro ao atualizar perfil' });
+  }
+});
+
+// Production / Split
+app.post('/api/movements/production', authenticateToken, async (req: any, res) => {
+  const { source_product_id, target_product_id, quantity_produced, quantity_consumed } = req.body;
+  const { id: user_id } = req.user;
+
+  if (!source_product_id || !target_product_id || !quantity_produced || !quantity_consumed) {
+    return res.status(400).json({ error: 'Dados incompletos para produção' });
+  }
+
+  try {
+    // Start transaction logic (manual in SQLite without explicit transaction block in this lib, but sequential)
+    // 1. Check source stock
+    const source = await db.prepare('SELECT * FROM products WHERE id = ?').get(source_product_id) as any;
+    if (!source) return res.status(404).json({ error: 'Produto origem não encontrado' });
+    
+    if (source.stock_quantity < quantity_consumed) {
+      return res.status(400).json({ error: `Estoque insuficiente na origem. Disponível: ${source.stock_quantity}` });
+    }
+
+    // 2. Decrement Source
+    await db.prepare('UPDATE products SET stock_quantity = stock_quantity - ? WHERE id = ?').run(quantity_consumed, source_product_id);
+    
+    // 3. Increment Target
+    await db.prepare('UPDATE products SET stock_quantity = stock_quantity + ? WHERE id = ?').run(quantity_produced, target_product_id);
+
+    // 4. Register OUT movement for Source
+    await db.prepare(`
+      INSERT INTO movements (product_id, type, quantity, user_id, observation, timestamp)
+      VALUES (?, 'out', ?, ?, ?, datetime('now'))
+    `).run(source_product_id, quantity_consumed, user_id, `Produção: Usado para criar produto #${target_product_id}`);
+
+    // 5. Register IN movement for Target
+    await db.prepare(`
+      INSERT INTO movements (product_id, type, quantity, user_id, observation, timestamp)
+      VALUES (?, 'in', ?, ?, ?, datetime('now'))
+    `).run(target_product_id, quantity_produced, user_id, `Produção: Criado a partir do produto #${source_product_id}`);
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Production error:', error);
+    res.status(500).json({ error: 'Erro ao registrar produção' });
   }
 });
 

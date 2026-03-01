@@ -28,10 +28,22 @@ export default function Products() {
       const res = await fetch('/api/products', {
         headers: { Authorization: `Bearer ${token}` }
       });
+      
+      if (!res.ok) {
+        throw new Error(`Erro ${res.status}: Falha ao carregar produtos`);
+      }
+
       const data = await res.json();
-      setProducts(data);
+      
+      if (Array.isArray(data)) {
+        setProducts(data);
+      } else {
+        console.error('Dados inválidos recebidos:', data);
+        setProducts([]);
+      }
     } catch (error) {
       console.error(error);
+      setProducts([]); // Fallback to empty array
     } finally {
       setLoading(false);
     }

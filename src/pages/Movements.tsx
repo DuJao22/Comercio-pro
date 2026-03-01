@@ -49,7 +49,48 @@ export default function Movements() {
   const [paymentStatus, setPaymentStatus] = useState<'paid' | 'pending'>('paid');
   const [paymentDueDate, setPaymentDueDate] = useState('');
 
-  // ... (existing code)
+  // Form state (Production)
+  const [sourceProductId, setSourceProductId] = useState<number | ''>('');
+  const [targetProductId, setTargetProductId] = useState<number | ''>('');
+  const [productionQuantity, setProductionQuantity] = useState<number>(1);
+  const [consumptionQuantity, setConsumptionQuantity] = useState<number>(0);
+
+  // Calculate consumption when production inputs change
+  useEffect(() => {
+    if (activeTab === 'production' && sourceProductId && targetProductId && productionQuantity) {
+      const source = products.find(p => p.id === Number(sourceProductId));
+      const target = products.find(p => p.id === Number(targetProductId));
+
+      if (source && target) {
+        // Simple weight conversion logic
+        // Assuming weight is always the numeric value of the unit
+        // We need to normalize to grams for calculation
+        
+        const getWeightInGrams = (weight: number, unit: string) => {
+          if (unit === 'kg') return weight * 1000;
+          if (unit === 'g') return weight;
+          return weight; // fallback
+        };
+
+        const targetTotalWeightGrams = getWeightInGrams(target.weight, target.unit) * productionQuantity;
+        const sourceUnitWeightGrams = getWeightInGrams(source.weight, source.unit);
+
+        if (sourceUnitWeightGrams > 0) {
+          // Calculate how many source units are needed
+          // e.g. Need 50g. Source is 5kg (5000g). Result = 0.01
+          const calculatedConsumption = targetTotalWeightGrams / sourceUnitWeightGrams;
+          setConsumptionQuantity(Number(calculatedConsumption.toFixed(4)));
+        }
+      }
+    }
+  }, [sourceProductId, targetProductId, productionQuantity, products, activeTab]);
+
+  const filteredProducts = user?.role === 'superadmin' && selectedStoreId
+    ? products.filter((p: any) => p.store_id === Number(selectedStoreId))
+    : products;
+
+  // Filter for production: Source and Target must be from the same store (if selected)
+  const productionProducts = filteredProducts;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

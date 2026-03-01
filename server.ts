@@ -287,7 +287,8 @@ app.get('/api/dashboard', authenticateToken, async (req: any, res) => {
 
 // Products
 app.get('/api/products', authenticateToken, async (req: any, res) => {
-  const { role, store_id } = req.user;
+  const { role } = req.user;
+  const store_id = req.user.store_id || null;
   let products;
   
   try {
@@ -296,8 +297,11 @@ app.get('/api/products', authenticateToken, async (req: any, res) => {
     } else {
       products = await db.prepare('SELECT * FROM products WHERE store_id = ?').all(store_id);
     }
+    
+    if (!products) products = [];
     res.json(products);
   } catch (error) {
+    console.error('Error fetching products:', error);
     res.status(500).json({ error: 'Erro ao buscar produtos' });
   }
 });
